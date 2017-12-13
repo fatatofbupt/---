@@ -10,13 +10,27 @@ var index = require('./routes/index');
 var users = require('./routes/users');
 var wechatHandler = require('./routes/wechatHandler');
 
+/////////////////////////////////////////
+///message send
 var WechatAPI = require('wechat-api');
 //var WechatAPI = p.promisifyAll(require('wechat-api'));
+var token = "fatcateatrat";
 var appid = 'wxb81c19145617ca88';
 var appsecret =  '26768d2175092a6aa779645392e7d3e2';
 var api = p.promisifyAll(new WechatAPI(appid, appsecret));
 
 
+/////////////////////////////////////////
+///message receive
+var wechat = require('wechat');
+var config = {
+  token: token,
+  appid: appid,
+//  encodingAESKey: appsecret,
+  checkSignature: false // 可选，默认为true。由于微信公众平台接口调试工具在明文模式下不发送签名，所以如要使用该测试工具，请将其设置为false
+};
+
+//////////////////////////////
 var menu = {
  "button":[
    {
@@ -26,11 +40,6 @@ var menu = {
          "type":"view",
          "name":"项目公示",
          "url":"http://www.czzhengtai.com:37077/zt/pages/xmgs.html"
-       },
-        {
-         "type":"view",
-         "name":"进度查询",
-         "url":"http://www.czzhengtai.com:37077/zt/pages/xmjd.html"
        },
 	 {
          "type":"view",
@@ -133,46 +142,77 @@ var data = {
 };
 
 
-setInterval(function(){
-data.test1.value = new Date();
-console.log(data.test1.value);
+setInterval(
+	function(){
+		data.test1.value = new Date();
+		console.log(data.test1.value);
 
+		api.getFollowersAsync()
+		.then(function(res){
 
-api.getFollowers(function(err, res){
+			if(res.count > 0){
+				for(var i in res.data.openid){
+					var openid = res.data.openid[i]
+					//console.log(openid)
+					return api.sendTemplateAsync( openid, templateId, url, data);
 
-console.dir(res)
-if(res.count > 0){
-for(var i in res.data.openid){
-var openid = res.data.openid[i]
-console.log(openid)
-api.sendTemplate( openid, templateId, url, data, function(err,res){
-console.dir(err);
-console.dir(res);
-});
+				}
+			}
 
-}
-}
-});
-}, 3600 * 1000);
+		})
+		.catch(function(err){
+		console.dir(err);
+		});
+	}, 
+3600 * 1000);
 //////////
 
 var app = express();
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use('/', index);
-app.use('/users', users);
-app.use('/wechat', wechatHandler);
+app.use(express.query());
+app.use( function(req, res, next) {
+console.log("debug:" + req.url);
+next();
+})
+app.use('/wechat', wechat(config, function (req, res, next) {
+  // 微信输入信息都在req.weixin上
+  var message = req.weixin;
+   console.dir(message)
+    res.reply(message.Content + ",现在时间:" + new Date());
+	return;
+  if (message.FromUserName === 'diaosi') {
+    // 回复屌丝(普通回复)
+    res.reply('hehe');
+  } else if (message.FromUserName === 'text') {
+    //你也可以这样回复text类型的信息
+    res.reply({
+      content: 'text object',
+      type: 'text'
+    });
+  } else if (message.FromUserName === 'hehe') {
+    // 回复一段音乐
+    res.reply({
+      type: "music",
+      content: {
+        title: "来段音乐吧",
+        description: "一无所有",
+        musicUrl: "http://mp3.com/xx.mp3",
+        hqMusicUrl: "http://mp3.com/xx.mp3",
+        thumbMediaId: "thisThumbMediaId"
+      }
+    });
+  } else {
+    // 回复高富帅(图文回复)
+    res.reply([
+      {
+        title: '你来我家接我吧',
+        description: '这是女神与高富帅之间的对话',
+        picurl: 'http://nodeapi.cloudfoundry.com/qrcode.jpg',
+        url: 'http://nodeapi.cloudfoundry.com/'
+      }
+    ]);
+  }
+}));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -191,5 +231,4 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
-
 module.exports = app;

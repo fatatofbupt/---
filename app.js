@@ -99,7 +99,7 @@ api.removeMenuAsync()
 	return api.createMenuAsync(menu);
 })
 .then(function(res){
-	console.log("create menu");
+	console.log("create menu:");
 	console.dir(res);
 })
 .catch(function(e){
@@ -115,7 +115,7 @@ console.dir(res);
 */
 
 /////////////
-var templateId= 'UJ_w_pNFveifcNIAD0qRLnCR_3e7l57sOLeZNFY0Fss';
+var templateId= 'AauMiH0mJA6gQRlC6tnOmsXymNML8Ya-oNVTBffoqck';
 // URL置空，则在发送后,点击模板消息会进入一个空白页面（ios）, 或无法点击（android）
 var url= 'http://www.baidu.com/';
 var data = {
@@ -141,7 +141,26 @@ var data = {
    }
 };
 
-
+var articles = [
+ {
+   "title":"正泰",
+   "description":"测试描述",
+   "url":"http://www.baidu.com",
+   "picurl":"http://e.hiphotos.baidu.com/image/pic/item/ca1349540923dd54f2f4667bdb09b3de9c82481a.jpg",
+ },
+ {
+   "title":"测试标题1",
+   "description":"测试描述1",
+   "url":"http://www.163.com",
+   "picurl":"http://www.hemenway.com/images/Baby%20Erin.jpg",
+ },
+{
+   "title":"测试标题2",
+   "description":"测试描述1",
+   "url":"http://www.sina.com",
+   "picurl":"https://tse3.mm.bing.net/th?id=OIP.9iPhJa4OQVweA38P3RsnkAEgDY&pid=Api",
+ }
+];
 setInterval(
 	function(){
 		data.test1.value = new Date();
@@ -149,22 +168,31 @@ setInterval(
 
 		api.getFollowersAsync()
 		.then(function(res){
+			console.log("getFollowers:");
+			console.dir(res);
 
 			if(res.count > 0){
 				for(var i in res.data.openid){
 					var openid = res.data.openid[i]
 					//console.log(openid)
-					return api.sendTemplateAsync( openid, templateId, url, data);
+					//return api.sendTemplateAsync( openid, templateId, url, data);
 
+					return api.sendNewsAsync(openid, articles, callback);
 				}
 			}
 
 		})
+		.then(function(res){
+			console.log("sendNewsAsync:");
+			console.dir(res);
+			
+		})
 		.catch(function(err){
-		console.dir(err);
+			console.dir(err);
 		});
 	}, 
 3600 * 1000);
+
 //////////
 
 var app = express();
